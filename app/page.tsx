@@ -117,7 +117,7 @@ export default function Home() {
 
   // ---------------- 国内智谱 API 调用
   async function generateAIContent(sentence: string) {
-    const response = await fetch("/api/ai-generate", {
+    const response = await fetch("/api/generate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ sentence }),
