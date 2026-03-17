@@ -36,6 +36,7 @@ export async function POST(req: Request) {
 
     let content =
       result?.choices?.[0]?.message?.content || "";
+    console.log("AI内容:", content);
 
     content = content
       .replace(/```json/g, "")
