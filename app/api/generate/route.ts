@@ -28,9 +28,24 @@ example:""
       }),
     });
 
-    const data = await response.json();
+const result = await response.json();
 
-    return Response.json(data);
+// 拿到AI返回内容
+const content = result.choices?.[0]?.message?.content || "";
+
+// 尝试解析 JSON
+let parsed;
+try {
+  parsed = JSON.parse(content);
+} catch (e) {
+  parsed = {
+    translation: content,
+    keywords: "",
+    example: "",
+  };
+}
+
+return Response.json(parsed);
   } catch (error) {
     console.error(error);
     return Response.json({ error: "AI generation failed" }, { status: 500 });
