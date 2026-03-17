@@ -16,7 +16,19 @@ export async function POST(req: Request) {
           messages: [
             {
               role: "user",
-              content: `请为这个英语句子生成学习卡片：
+         content: `请为这个英语句子生成学习卡片。
+
+句子: ${sentence}
+
+⚠️ 必须严格返回 JSON，不要解释，不要多余文字：
+
+{
+  "translation": "中文翻译",
+  "keywords": "关键词1,关键词2",
+  "example": "一个简单英文例句"
+}
+
+只返回 JSON。`,
 
 句子: ${sentence}
 
@@ -38,8 +50,9 @@ export async function POST(req: Request) {
     console.log("AI返回:", result);
 
     // 👉 取出AI内容
-    const content = result?.choices?.[0]?.message?.content || "";
-
+    let content = result?.choices?.[0]?.message?.content || "";
+    // 👉 清理 ```json 包裹（非常关键）
+content = content.replace(/```json/g, "").replace(/```/g, "").trim();
     // 👉 尝试解析JSON
     let parsed;
     try {
