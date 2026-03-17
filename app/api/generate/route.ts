@@ -1,38 +1,67 @@
-const result = await response.json();
+export async function POST(req: Request) {
+  try {
+    const { sentence } = await req.json();
 
-// 👉 打印完整返回（关键）
-console.log("完整AI返回:", JSON.stringify(result, null, 2));
+    const response = await fetch(
+      "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.ZHIPU_API_KEY}`,
+        },
+        body: JSON.stringify({
+          model: "glm-4-flash",
+          messages: [
+            {
+              role: "user",
+              content: `请为这个英语句子生成学习卡片：
 
-// 👉 强制拿到content
-let content = "";
+句子: ${sentence}
 
-if (
-  result &&
-  result.choices &&
-  result.choices.length > 0 &&
-  result.choices[0].message &&
-  result.choices[0].message.content
-) {
-  content = result.choices[0].message.content;
+请严格返回JSON格式:
+{
+  "translation": "中文翻译",
+  "keywords": "关键词(用逗号分隔)",
+  "example": "一个简单英文例句"
+}`,
+            },
+          ],
+        }),
+      }
+    );
+
+    const result = await response.json();
+    console.log("完整AI返回:", JSON.stringify(result, null, 2));
+
+    let content =
+      result?.choices?.[0]?.message?.content || "";
+
+    content = content
+      .replace(/```json/g, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let parsed;
+
+    try {
+      parsed = JSON.parse(content);
+    } catch (e) {
+      console.error("解析失败:", content);
+      parsed = {
+        translation: content,
+        keywords: "",
+        example: "",
+      };
+    }
+
+    return Response.json(parsed);
+
+  } catch (error) {
+    console.error("接口错误:", error);
+    return Response.json(
+      { error: "AI generation failed" },
+      { status: 500 }
+    );
+  }
 }
-
-// 👉 清理 markdown 包裹
-content = content.replace(/```json/g, "").replace(/```/g, "").trim();
-
-console.log("AI内容:", content);
-
-// 👉 尝试解析
-let parsed;
-
-try {
-  parsed = JSON.parse(content);
-} catch (e) {
-  console.error("解析失败:", content);
-  parsed = {
-    translation: content,
-    keywords: "",
-    example: "",
-  };
-}
-
-return Response.json(parsed);
