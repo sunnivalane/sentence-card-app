@@ -9,36 +9,29 @@ export default function Home() {
   async function generateAIContent() {
     if (!sentence) return;
 
-    const response = await fetch("/api/generate", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ sentence }),
-    });
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sentence }),
+      });
 
-    const data = await response.json();
+      const data = await response.json();
 
-    console.log("前端拿到的数据:", data);
+      console.log("前端拿到的数据:", data);
 
-    // ✅ 关键：字段统一
-    setCards([
-      {
-        translation: data.translation || "",
-        keywords: data.keywords || "",
-        example: data.example || "",
-        collapsed: false,
-      },
-    ]);
-
-    // ✅ 可选：不清空输入（避免你以为“消失了”）
-    // setSentence("");
-  }
-
-  function toggleCollapse(index: number) {
-    const updated = [...cards];
-    updated[index].collapsed = !updated[index].collapsed;
-    setCards(updated);
+      setCards([
+        {
+          translation: data.translation || "",
+          keywords: data.keywords || "",
+          example: data.example || "",
+        },
+      ]);
+    } catch (error) {
+      console.error("请求失败:", error);
+    }
   }
 
   return (
@@ -64,19 +57,9 @@ export default function Home() {
               marginBottom: 10,
             }}
           >
-            <div
-              onClick={() => toggleCollapse(index)}
-              style={{ cursor: "pointer", fontWeight: "bold" }}
-            >
-              翻译: {card.translation}
-            </div>
-
-            {!card.collapsed && (
-              <div style={{ marginTop: 10 }}>
-                <div>关键词: {card.keywords}</div>
-                <div>例句: {card.example}</div>
-              </div>
-            )}
+            <p><strong>翻译：</strong>{card.translation}</p >
+            <p><strong>关键词：</strong>{card.keywords}</p >
+            <p><strong>例句：</strong>{card.example}</p >
           </div>
         ))}
       </div>
