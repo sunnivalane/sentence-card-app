@@ -197,10 +197,30 @@ export default function Home() {
   async function startCapture(targetCardId?: string) {
     try {
       setCaptureError("");
-      setRecordedAudioData("");
-      setRecordingCardId(targetCardId || "");
-      finalTranscriptRef.current = "";
-      audioChunksRef.current = [];
+
+// 先强制结束上一轮残留状态，避免手机端第二次录音失效
+stopSpeechRecognition();
+
+if (mediaRecorderRef.current) {
+  try {
+    if (mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.stop();
+    }
+  } catch (err) {
+    console.error("清理旧录音器失败:", err);
+  }
+  mediaRecorderRef.current = null;
+}
+
+stopStreamTracks();
+
+// 再开始新一轮
+setRecordedAudioData("");
+setRecordingCardId(targetCardId || "");
+setIsCapturing(false);
+
+finalTranscriptRef.current = "";
+audioChunksRef.current = [];
 
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -247,7 +267,9 @@ export default function Home() {
     setCaptureError("录音处理失败");
   } finally {
     stopStreamTracks();
-    setRecordingCardId("");
+    mediaRecorderRef.current = null;
+     setRecordingCardId("");
+      setIsCapturing(false);
   }
 };
 
@@ -285,9 +307,11 @@ export default function Home() {
 
       recognitionRef.current = recognition;
 
-      mediaRecorder.start();
-      recognition.start();
-      setIsCapturing(true);
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
+     mediaRecorder.start();
+     recognition.start();
+     setIsCapturing(true);
     } catch (err) {
       console.error(err);
       setCaptureError("无法开始录音，请检查麦克风权限");
