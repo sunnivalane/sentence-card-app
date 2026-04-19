@@ -55,6 +55,7 @@ export default function Home() {
   const [searchText, setSearchText] = useState("");
   const [filterCategory, setFilterCategory] = useState("全部");
   const [filterStatus, setFilterStatus] = useState("全部");
+  const [showFilters, setShowFilters] = useState(false);
 
   const [isCapturing, setIsCapturing] = useState(false);
   const [recordedAudioData, setRecordedAudioData] = useState("");
@@ -115,18 +116,18 @@ export default function Home() {
     });
   }, [cards]);
   useEffect(() => {
-  function loadVoices() {
-    const loadedVoices = window.speechSynthesis.getVoices();
-    setVoices(loadedVoices);
-  }
+    function loadVoices() {
+      const loadedVoices = window.speechSynthesis.getVoices();
+      setVoices(loadedVoices);
+    }
 
-  loadVoices();
-  window.speechSynthesis.onvoiceschanged = loadVoices;
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
 
-  return () => {
-    window.speechSynthesis.onvoiceschanged = null;
-  };
-}, []);
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (!highlightCardId) return;
@@ -198,29 +199,29 @@ export default function Home() {
     try {
       setCaptureError("");
 
-// 先强制结束上一轮残留状态，避免手机端第二次录音失效
-stopSpeechRecognition();
+      // 先强制结束上一轮残留状态，避免手机端第二次录音失效
+      stopSpeechRecognition();
 
-if (mediaRecorderRef.current) {
-  try {
-    if (mediaRecorderRef.current.state !== "inactive") {
-      mediaRecorderRef.current.stop();
-    }
-  } catch (err) {
-    console.error("清理旧录音器失败:", err);
-  }
-  mediaRecorderRef.current = null;
-}
+      if (mediaRecorderRef.current) {
+        try {
+          if (mediaRecorderRef.current.state !== "inactive") {
+            mediaRecorderRef.current.stop();
+          }
+        } catch (err) {
+          console.error("清理旧录音器失败:", err);
+        }
+        mediaRecorderRef.current = null;
+      }
 
-stopStreamTracks();
+      stopStreamTracks();
 
-// 再开始新一轮
-setRecordedAudioData("");
-setRecordingCardId(targetCardId || "");
-setIsCapturing(false);
+      // 再开始新一轮
+      setRecordedAudioData("");
+      setRecordingCardId(targetCardId || "");
+      setIsCapturing(false);
 
-finalTranscriptRef.current = "";
-audioChunksRef.current = [];
+      finalTranscriptRef.current = "";
+      audioChunksRef.current = [];
 
       const SpeechRecognition =
         window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -243,35 +244,35 @@ audioChunksRef.current = [];
       };
 
       mediaRecorder.onstop = async () => {
-  try {
-    if (audioChunksRef.current.length > 0) {
-      const audioBlob = new Blob(audioChunksRef.current, {
-        type: "audio/webm",
-      });
-      const base64Audio = await blobToBase64(audioBlob);
+        try {
+          if (audioChunksRef.current.length > 0) {
+            const audioBlob = new Blob(audioChunksRef.current, {
+              type: "audio/webm",
+            });
+            const base64Audio = await blobToBase64(audioBlob);
 
-      if (targetCardId) {
-        setCards((prev) =>
-          prev.map((card) =>
-            card.id === targetCardId
-              ? { ...card, audioData: base64Audio }
-              : card
-          )
-        );
-      } else {
-        setRecordedAudioData(base64Audio);
-      }
-    }
-  } catch (err) {
-    console.error(err);
-    setCaptureError("录音处理失败");
-  } finally {
-    stopStreamTracks();
-    mediaRecorderRef.current = null;
-     setRecordingCardId("");
-      setIsCapturing(false);
-  }
-};
+            if (targetCardId) {
+              setCards((prev) =>
+                prev.map((card) =>
+                  card.id === targetCardId
+                    ? { ...card, audioData: base64Audio }
+                    : card
+                )
+              );
+            } else {
+              setRecordedAudioData(base64Audio);
+            }
+          }
+        } catch (err) {
+          console.error(err);
+          setCaptureError("录音处理失败");
+        } finally {
+          stopStreamTracks();
+          mediaRecorderRef.current = null;
+          setRecordingCardId("");
+          setIsCapturing(false);
+        }
+      };
 
       const recognition = new SpeechRecognition();
       recognition.lang = "en-US";
@@ -297,21 +298,21 @@ audioChunksRef.current = [];
       };
 
       recognition.onerror = (event: any) => {
-  if (event.error === "aborted") {
-    return;
-  }
+        if (event.error === "aborted") {
+          return;
+        }
 
-  console.error("语音识别错误:", event.error);
-  setCaptureError("语音转文字失败，请重试");
-};
+        console.error("语音识别错误:", event.error);
+        setCaptureError("语音转文字失败，请重试");
+      };
 
       recognitionRef.current = recognition;
 
       await new Promise((resolve) => setTimeout(resolve, 200));
 
-     mediaRecorder.start();
-     recognition.start();
-     setIsCapturing(true);
+      mediaRecorder.start();
+      recognition.start();
+      setIsCapturing(true);
     } catch (err) {
       console.error(err);
       setCaptureError("无法开始录音，请检查麦克风权限");
@@ -320,52 +321,52 @@ audioChunksRef.current = [];
     }
   }
 
- function stopCapture() {
-  try {
-    if (
-      mediaRecorderRef.current &&
-      mediaRecorderRef.current.state !== "inactive"
-    ) {
-      mediaRecorderRef.current.stop();
+  function stopCapture() {
+    try {
+      if (
+        mediaRecorderRef.current &&
+        mediaRecorderRef.current.state !== "inactive"
+      ) {
+        mediaRecorderRef.current.stop();
+      }
+      stopSpeechRecognition();
+    } catch (err) {
+      console.error(err);
+      setCaptureError("停止录音失败");
+    } finally {
+      setIsCapturing(false);
     }
-    stopSpeechRecognition();
-  } catch (err) {
-    console.error(err);
-    setCaptureError("停止录音失败");
-  } finally {
-    setIsCapturing(false);
   }
-}
 
   function playStandardSpeech(text: string) {
-  if (!text.trim()) return;
+    if (!text.trim()) return;
 
-  window.speechSynthesis.cancel();
+    window.speechSynthesis.cancel();
 
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = "en-US";
-  utterance.rate = 0.88;
-  utterance.pitch = 1;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.rate = 0.88;
+    utterance.pitch = 1;
 
-  const preferredVoice =
-    voices.find((voice) => voice.name.includes("Samantha")) ||
-    voices.find((voice) => voice.name.includes("Ava")) ||
-    voices.find((voice) => voice.name.includes("Allison")) ||
-    voices.find((voice) => voice.name.includes("Alex")) ||
-    voices.find((voice) => voice.name.includes("Daniel")) ||
-    voices.find(
-      (voice) => voice.lang === "en-US" && voice.localService === true
-    ) ||
-    voices.find((voice) => voice.lang === "en-US") ||
-    voices.find((voice) => voice.lang.startsWith("en"));
+    const preferredVoice =
+      voices.find((voice) => voice.name.includes("Samantha")) ||
+      voices.find((voice) => voice.name.includes("Ava")) ||
+      voices.find((voice) => voice.name.includes("Allison")) ||
+      voices.find((voice) => voice.name.includes("Alex")) ||
+      voices.find((voice) => voice.name.includes("Daniel")) ||
+      voices.find(
+        (voice) => voice.lang === "en-US" && voice.localService === true
+      ) ||
+      voices.find((voice) => voice.lang === "en-US") ||
+      voices.find((voice) => voice.lang.startsWith("en"));
 
-  if (preferredVoice) {
-    utterance.voice = preferredVoice;
-    console.log("当前标准发音 voice:", preferredVoice.name, preferredVoice.lang);
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+      console.log("当前标准发音 voice:", preferredVoice.name, preferredVoice.lang);
+    }
+
+    window.speechSynthesis.speak(utterance);
   }
-
-  window.speechSynthesis.speak(utterance);
-}
 
   async function generateAIContent() {
     if (!sentence.trim()) {
@@ -478,25 +479,25 @@ audioChunksRef.current = [];
     );
   }
 
- const filteredCards = useMemo(() => {
-  const keyword = searchText.trim().toLowerCase();
+  const filteredCards = useMemo(() => {
+    const keyword = searchText.trim().toLowerCase();
 
-  return cards.filter((card) => {
-    const matchCategory =
-      filterCategory === "全部" || card.category === filterCategory;
+    return cards.filter((card) => {
+      const matchCategory =
+        filterCategory === "全部" || card.category === filterCategory;
 
-    const matchStatus =
-      filterStatus === "全部" || card.status === filterStatus;
+      const matchStatus =
+        filterStatus === "全部" || card.status === filterStatus;
 
-    const matchSearch =
-      !keyword ||
-      card.sentence.toLowerCase().includes(keyword) ||
-      card.keywords.toLowerCase().includes(keyword) ||
-      card.example.toLowerCase().includes(keyword);
+      const matchSearch =
+        !keyword ||
+        card.sentence.toLowerCase().includes(keyword) ||
+        card.keywords.toLowerCase().includes(keyword) ||
+        card.example.toLowerCase().includes(keyword);
 
-    return matchCategory && matchStatus && matchSearch;
-  });
-}, [cards, filterCategory, filterStatus, searchText]);
+      return matchCategory && matchStatus && matchSearch;
+    });
+  }, [cards, filterCategory, filterStatus, searchText]);
 
   function expandAllCategories() {
     const allCategories = Array.from(
@@ -551,10 +552,10 @@ audioChunksRef.current = [];
     backgroundColor: activeTab === tab ? "#2563eb" : "#e5e7eb",
     color: activeTab === tab ? "#ffffff" : "#111827",
   });
-function clearCurrentRecording() {
-  setRecordedAudioData("");
-  setCaptureError("");
-}
+  function clearCurrentRecording() {
+    setRecordedAudioData("");
+    setCaptureError("");
+  }
   return (
     <main
       style={{
@@ -650,38 +651,38 @@ function clearCurrentRecording() {
                 }}
               >
                 {!isCapturing ? (
-  <button
-    onClick={() => startCapture()}
-    style={{
-      backgroundColor: "#2563eb",
-      color: "#ffffff",
-      border: "none",
-      borderRadius: "12px",
-      padding: "10px 18px",
-      fontSize: "15px",
-      fontWeight: 600,
-      cursor: "pointer",
-    }}
-  >
-    开始录音
-  </button>
-) : (
-  <button
-    onClick={stopCapture}
-    style={{
-      backgroundColor: "#dc2626",
-      color: "#ffffff",
-      border: "none",
-      borderRadius: "12px",
-      padding: "10px 18px",
-      fontSize: "15px",
-      fontWeight: 600,
-      cursor: "pointer",
-    }}
-  >
-    停止录音
-  </button>
-)}
+                  <button
+                    onClick={() => startCapture()}
+                    style={{
+                      backgroundColor: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "12px",
+                      padding: "10px 18px",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    开始录音
+                  </button>
+                ) : (
+                  <button
+                    onClick={stopCapture}
+                    style={{
+                      backgroundColor: "#dc2626",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "12px",
+                      padding: "10px 18px",
+                      fontSize: "15px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    停止录音
+                  </button>
+                )}
 
                 <span
                   style={{
@@ -693,8 +694,8 @@ function clearCurrentRecording() {
                   {isCapturing
                     ? "录音中，会同时转写文字并保存录音..."
                     : recordedAudioData
-                    ? "本次录音已准备好，可直接生成卡片"
-                    : "点击开始录音，说一句英文，停止后会自动填入输入框"}
+                      ? "本次录音已准备好，可直接生成卡片"
+                      : "点击开始录音，说一句英文，停止后会自动填入输入框"}
                 </span>
               </div>
 
@@ -711,19 +712,19 @@ function clearCurrentRecording() {
               )}
 
               {recordedAudioData && (
-  <div>
-    <div
-      style={{
-        fontSize: "14px",
-        color: "#6b7280",
-        marginBottom: "8px",
-      }}
-    >
-      录音预览
-    </div>
-    <audio controls src={recordedAudioData} />
-  </div>
-)}
+                <div>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      color: "#6b7280",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    录音预览
+                  </div>
+                  <audio controls src={recordedAudioData} />
+                </div>
+              )}
             </div>
 
             <label
@@ -922,6 +923,22 @@ function clearCurrentRecording() {
                   共 {filteredCards.length} / {cards.length} 张卡片
                 </span>
 
+                <button
+                  onClick={() => setShowFilters((prev) => !prev)}
+                  style={{
+                    backgroundColor: "#eef2ff",
+                    color: "#3730a3",
+                    border: "none",
+                    borderRadius: "10px",
+                    padding: "10px 14px",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  {showFilters ? "收起筛选" : "展开筛选"}
+                </button>
+
                 {cards.length > 0 && (
                   <>
                     <button
@@ -976,135 +993,136 @@ function clearCurrentRecording() {
               </div>
             </div>
 
-            <div
-  style={{
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    padding: "18px",
-    boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-    marginBottom: "20px",
-    display: "flex",
-    gap: "12px",
-    flexWrap: "wrap",
-    alignItems: "end",
-  }}
->
-  <div style={{ flex: "1 1 320px" }}>
-    <label
-      style={{
-        display: "block",
-        fontSize: "14px",
-        fontWeight: 600,
-        color: "#111827",
-        marginBottom: "8px",
-      }}
-    >
-      搜索卡片
-    </label>
-    <input
-      value={searchText}
-      onChange={(e) => setSearchText(e.target.value)}
-      placeholder="可搜索原句、关键词、例句"
-      style={{
-        width: "100%",
-        border: "1px solid #d1d5db",
-        borderRadius: "10px",
-        padding: "10px 12px",
-        fontSize: "15px",
-        boxSizing: "border-box",
-      }}
-    />
-  </div>
+            {showFilters && (
+              <div
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: "16px",
+                  padding: "18px",
+                  boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
+                  marginBottom: "20px",
+                  display: "flex",
+                  gap: "12px",
+                  flexWrap: "wrap",
+                  alignItems: "end",
+                }}
+              >
+                <div style={{ flex: "1 1 320px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#111827",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    搜索卡片
+                  </label>
+                  <input
+                    value={searchText}
+                    onChange={(e) => setSearchText(e.target.value)}
+                    placeholder="可搜索原句、关键词、例句"
+                    style={{
+                      width: "100%",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "10px",
+                      padding: "10px 12px",
+                      fontSize: "15px",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
 
-  <div style={{ minWidth: "220px" }}>
-    <label
-      style={{
-        display: "block",
-        fontSize: "14px",
-        fontWeight: 600,
-        color: "#111827",
-        marginBottom: "8px",
-      }}
-    >
-      分类筛选
-    </label>
-    <select
-      value={filterCategory}
-      onChange={(e) => setFilterCategory(e.target.value)}
-      style={{
-        width: "100%",
-        border: "1px solid #d1d5db",
-        borderRadius: "10px",
-        padding: "10px 12px",
-        fontSize: "15px",
-        backgroundColor: "#ffffff",
-      }}
-    >
-      <option value="全部">全部</option>
-      {CATEGORY_OPTIONS.map((item) => (
-        <option key={item} value={item}>
-          {item}
-        </option>
-      ))}
-    </select>
-  </div>
+                <div style={{ minWidth: "220px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#111827",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    分类筛选
+                  </label>
+                  <select
+                    value={filterCategory}
+                    onChange={(e) => setFilterCategory(e.target.value)}
+                    style={{
+                      width: "100%",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "10px",
+                      padding: "10px 12px",
+                      fontSize: "15px",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    <option value="全部">全部</option>
+                    {CATEGORY_OPTIONS.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-  <div style={{ minWidth: "220px" }}>
-    <label
-      style={{
-        display: "block",
-        fontSize: "14px",
-        fontWeight: 600,
-        color: "#111827",
-        marginBottom: "8px",
-      }}
-    >
-      状态筛选
-    </label>
-    <select
-      value={filterStatus}
-      onChange={(e) => setFilterStatus(e.target.value)}
-      style={{
-        width: "100%",
-        border: "1px solid #d1d5db",
-        borderRadius: "10px",
-        padding: "10px 12px",
-        fontSize: "15px",
-        backgroundColor: "#ffffff",
-      }}
-    >
-      <option value="全部">全部</option>
-      {STATUS_OPTIONS.map((item) => (
-        <option key={item} value={item}>
-          {item}
-        </option>
-      ))}
-    </select>
-  </div>
+                <div style={{ minWidth: "220px" }}>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      color: "#111827",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    状态筛选
+                  </label>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    style={{
+                      width: "100%",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "10px",
+                      padding: "10px 12px",
+                      fontSize: "15px",
+                      backgroundColor: "#ffffff",
+                    }}
+                  >
+                    <option value="全部">全部</option>
+                    {STATUS_OPTIONS.map((item) => (
+                      <option key={item} value={item}>
+                        {item}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-  {(searchText || filterCategory !== "全部" || filterStatus !== "全部") && (
-    <button
-      onClick={() => {
-        setSearchText("");
-        setFilterCategory("全部");
-        setFilterStatus("全部");
-      }}
-      style={{
-        backgroundColor: "#eef2ff",
-        color: "#3730a3",
-        border: "none",
-        borderRadius: "10px",
-        padding: "10px 16px",
-        fontSize: "14px",
-        fontWeight: 600,
-        cursor: "pointer",
-      }}
-    >
-      清除筛选
-    </button>
-  )}
-</div>
-
+                {(searchText || filterCategory !== "全部" || filterStatus !== "全部") && (
+                  <button
+                    onClick={() => {
+                      setSearchText("");
+                      setFilterCategory("全部");
+                      setFilterStatus("全部");
+                    }}
+                    style={{
+                      backgroundColor: "#eef2ff",
+                      color: "#3730a3",
+                      border: "none",
+                      borderRadius: "10px",
+                      padding: "10px 16px",
+                      fontSize: "14px",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                    }}
+                  >
+                    清除筛选
+                  </button>
+                )}
+              </div>
+            )}
             {filteredCards.length === 0 ? (
               <div
                 style={{
@@ -1209,61 +1227,61 @@ function clearCurrentRecording() {
                                 }}
                               >
                                 <div
-                                 style={{
-                                  fontSize: "14px",
-                                  color: "#6b7280",
-                                  marginBottom: "8px",
-                                }}
-                              >
-                               我的录音
-                             </div>
+                                  style={{
+                                    fontSize: "14px",
+                                    color: "#6b7280",
+                                    marginBottom: "8px",
+                                  }}
+                                >
+                                  我的录音
+                                </div>
 
-                            {card.audioData ? (
-                            <audio controls src={card.audioData} />
-                            ) : (
-                              <div
-                              style={{
-                              color: "#9ca3af",
-                              fontSize: "14px",
-                              marginBottom: "12px",
-                           }}
-                          >
-                           这张卡片还没有录音
-                        </div>
-                       )}
+                                {card.audioData ? (
+                                  <audio controls src={card.audioData} />
+                                ) : (
+                                  <div
+                                    style={{
+                                      color: "#9ca3af",
+                                      fontSize: "14px",
+                                      marginBottom: "12px",
+                                    }}
+                                  >
+                                    这张卡片还没有录音
+                                  </div>
+                                )}
 
-                       <div
-                        style={{
-                          marginTop: "12px",
-                          display: "flex",
-                          gap: "10px",
-                          flexWrap: "wrap",
-                        }}
-                       >
-                        <button
-                        onClick={() => {
-                          if (isCapturing && recordingCardId === card.id) {
-                            stopCapture();
-                          } else {
-                            startCapture(card.id);
-                          }
-                        }}
-                        style={{
-                          backgroundColor:
-                            isCapturing && recordingCardId === card.id ? "#dc2626" : "#dbeafe",
-                          color:
-                            isCapturing && recordingCardId === card.id ? "#ffffff" : "#1d4ed8",
-                          border: "none",
-                          borderRadius: "10px",
-                          padding: "10px 14px",
-                          fontSize: "14px",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                        }}
-                        >
-                          {isCapturing && recordingCardId === card.id ? "停止录音" : "重新录音"}
-                        </button>
-                        </div>
+                                <div
+                                  style={{
+                                    marginTop: "12px",
+                                    display: "flex",
+                                    gap: "10px",
+                                    flexWrap: "wrap",
+                                  }}
+                                >
+                                  <button
+                                    onClick={() => {
+                                      if (isCapturing && recordingCardId === card.id) {
+                                        stopCapture();
+                                      } else {
+                                        startCapture(card.id);
+                                      }
+                                    }}
+                                    style={{
+                                      backgroundColor:
+                                        isCapturing && recordingCardId === card.id ? "#dc2626" : "#dbeafe",
+                                      color:
+                                        isCapturing && recordingCardId === card.id ? "#ffffff" : "#1d4ed8",
+                                      border: "none",
+                                      borderRadius: "10px",
+                                      padding: "10px 14px",
+                                      fontSize: "14px",
+                                      fontWeight: 600,
+                                      cursor: "pointer",
+                                    }}
+                                  >
+                                    {isCapturing && recordingCardId === card.id ? "停止录音" : "重新录音"}
+                                  </button>
+                                </div>
                                 <div
                                   style={{
                                     fontSize: "14px",
